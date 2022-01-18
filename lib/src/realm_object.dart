@@ -207,13 +207,17 @@ class RealmObject {
     return true;
   }
 
+  Realm? get realm => _realm;
+
+  bool get isManaged => _realm != null;
+
   @override
   // ignore: hash_and_equals
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! RealmObject) return false;
     if (!isManaged || !other.isManaged) return false;
-    return realmCore.equals(this, other);
+    return realmCore.objectEquals(this, other);
   }
 }
 
@@ -250,9 +254,6 @@ extension RealmObjectInternal on RealmObject {
 
   RealmObjectHandle get handle => _handle!;
   RealmAccessor get accessor => _accessor;
-  Realm? get realm => _realm;
-
-  bool get isManaged => _realm != null;
 }
 
 /// An exception being thrown when a Realm operation or Realm object access fails
