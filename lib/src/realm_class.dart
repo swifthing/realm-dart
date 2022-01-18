@@ -232,6 +232,14 @@ class Realm {
     final handle = realmCore.queryClass(this, metadata.class_.key, query, args);
     return RealmResultsInternal.create<T>(handle, this);
   }
+
+  @override
+  // ignore: hash_and_equals
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! Realm) return false;
+    return realmCore.realmEquals(this, other);
+  }
 }
 
 class Scheduler {
