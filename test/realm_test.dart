@@ -1793,5 +1793,207 @@ Future<void> main([List<String>? args]) async {
       final r2 = Realm(config);
       expect(r1, isNot(r2));
     });
+    
+    test('RealmObject isValid', () {
+      var config = Configuration([Team.schema, Person.schema]);
+      var realm = Realm(config);
+
+      var team = Team("team one");
+      expect(team.isValid, true);
+      realm.write(() {
+        realm.add(team);
+      });
+      expect(team.isValid, true);
+      realm.close();
+      expect(team.isValid, false);
+    });
+
+    test('List isValid', () {
+      var config = Configuration([Team.schema, Person.schema]);
+      var realm = Realm(config);
+
+      realm.write(() {
+        realm.add(Team("Speed Team", players: [
+          Person("Michael Schumacher"),
+          Person("Sebastian Vettel"),
+          Person("Kimi Räikkönen"),
+        ]));
+      });
+
+      var teams = realm.all<Team>();
+
+      expect(teams, isNotNull);
+      expect(teams.length, 1);
+      final players = teams[0].players as RealmList<Person>;
+      expect(players.isValid, true);
+      realm.close();
+      expect(players.isValid, false);
+    });
+
+
+    test('Access results after realm closed', () {
+      var config = Configuration([Team.schema, Person.schema]);
+      var realm = Realm(config);
+
+      var team = Team("TeamOne");
+      realm.write(() => realm.add(team));
+      var teams = realm.all<Team>();
+      realm.close();
+      expect(() => teams[0], throws<RealmException>("Access to invalidated Results objects"));
+    });
+
+    test('Access deleted object', () {
+      var config = Configuration([Team.schema, Person.schema]);
+      var realm = Realm(config);
+
+      var team = Team("TeamOne");
+      realm.write(() => realm.add(team));
+      var teams = realm.all<Team>();
+      var teamBeforeDelete = teams[0];
+      realm.write(() => realm.delete(team));
+      expect(team.isValid, false);
+      expect(teamBeforeDelete.isValid, false);
+      expect(team, teamBeforeDelete);
+      expect(() => team.name, throws<RealmException>("Accessing object of type Team which has been invalidated or deleted"));
+      expect(() => teamBeforeDelete.name, throws<RealmException>("Accessing object of type Team which has been invalidated or deleted"));
+      realm.close();
+    });
+
+    test('Access deleted object collection', () {
+      var config = Configuration([Team.schema, Person.schema]);
+      var realm = Realm(config);
+
+      var team = Team("TeamOne");
+      realm.write(() => realm.add(team));
+      var teams = realm.all<Team>();
+      realm.write(() => realm.delete(team));
+      expect(() => team.players, throws<RealmException>("Accessing object of type Team which has been invalidated or deleted"));
+      realm.close();
+    });
+
+    test('Delete collection of deleted parent', () {
+      var config = Configuration([Team.schema, Person.schema]);
+      var realm = Realm(config);
+
+      var team = Team("TeamOne");
+      realm.write(() => realm.add(team));
+      var players = team.players;
+      realm.write(() => realm.delete(team));
+      expect(() => realm.write(() => realm.deleteMany(players)), throws<RealmException>("Access to invalidated Collection object"));
+      realm.close();
+    });
+
+    test('Add object after realm is closed', () {
+      var config = Configuration([Car.schema]);
+      var realm = Realm(config);
+
+      final car = Car('Tesla');
+
+      realm.close();
+      expect(() => realm.write(() => realm.add(car)), throws<RealmException>("Cannot access realm that has been closed"));
+    });
+
+    test('Edit object after realm is closed', () {
+      var config = Configuration([Person.schema]);
+      var realm = Realm(config);
+
+      final person = Person('Markos');
+
+      realm.write(() => realm.add(person));
+      realm.close();
+      expect(() => realm.write(() => person.name = "Markos Sanches"), throws<RealmException>("Cannot access realm that has been closed"));
+    });
+
+    test('Edit deleted object', () {
+      var config = Configuration([Person.schema]);
+      var realm = Realm(config);
+
+      final person = Person('Markos');
+
+      realm.write(() {
+        realm.add(person);
+        realm.delete(person);
+      });
+      expect(() => realm.write(() => person.name = "Markos Sanches"),
+          throws<RealmException>("Accessing object of type Person which has been invalidated or deleted"));
+      realm.close();
+    });
+
+    test('Get query results length after realm is clodes', () {
+      var config = Configuration([Team.schema, Person.schema]);
+      var realm = Realm(config);
+
+      var team = Team("TeamOne");
+      realm.write(() => realm.add(team));
+      final teams = realm.query<Team>('name BEGINSWITH "Team"');
+      realm.close();
+      expect(() => teams.length, throws<RealmException>("Access to invalidated Results objects"));
+    });
+
+    test('Get list length after deleting parent objects', () {
+      var config = Configuration([Team.schema, Person.schema]);
+      var realm = Realm(config);
+
+      var team = Team("TeamOne")..players.add(Person("Nikos"));
+      realm.write(() {
+        realm.add(team);
+        realm.delete(team);
+      });
+      expect(() => team.players.length, throws<RealmException>("Accessing object of type Team which has been invalidated or deleted"));
+
+      realm.close();
+    });
+
+    test('Realm adding objects graph', () {
+      var studentMichele = Student(1)
+        ..name = "Michele Ernesto"
+        ..yearOfBirth = 2005;
+      var studentLoreta = Student(2, name: "Loreta Salvator", yearOfBirth: 2006);
+      var studentPeter = Student(3, name: "Peter Ivanov", yearOfBirth: 2007);
+
+      var school131 = School("JHS 131", city: "NY");
+      school131.students.addAll([studentMichele, studentLoreta, studentPeter]);
+
+      var school131Branch1 = School("First branch 131A", city: "NY Bronx")
+        ..branchOfSchool = school131
+        ..students.addAll([studentMichele, studentLoreta]);
+
+      studentMichele.school = school131Branch1;
+      studentLoreta.school = school131Branch1;
+
+      var school131Branch2 = School("Second branch 131B", city: "NY Bronx")
+        ..branchOfSchool = school131
+        ..students.add(studentPeter);
+
+      studentPeter.school = school131Branch2;
+
+      school131.branches.addAll([school131Branch1, school131Branch2]);
+
+      var config = Configuration([School.schema, Student.schema]);
+      var realm = Realm(config);
+
+      realm.write(() => realm.add(school131));
+
+      //Check schools
+      var schools = realm.all<School>();
+      expect(schools.length, 3);
+
+      //Check students
+      var students = realm.all<Student>();
+      expect(students.length, 3);
+
+      //Check branches
+      var branches = realm.all<School>().query('branchOfSchool != nil');
+      expect(branches.length, 2);
+      expect(branches[0].students.length + branches[1].students.length, 3);
+
+      //Check main schools
+      var mainSchools = realm.all<School>().query('branchOfSchool = nil');
+      expect(mainSchools.length, 1);
+      expect(mainSchools[0].branches.length, 2);
+      expect(mainSchools[0].students.length, 3);
+      expect(mainSchools[0].branches[0].students.length + mainSchools[0].branches[1].students.length, 3);
+      realm.close();
+    });
   });
 }

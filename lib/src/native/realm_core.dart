@@ -570,6 +570,48 @@ class _RealmCore {
   }
 
   
+  }
+
+  bool listIsValid(RealmList list) {
+    return _realmLib.realm_list_is_valid(list.handle._pointer);
+  }
+
+  static void collection_change_callback(Object object, Pointer<realm_collection_changes> data) {
+    assert(object is NotificationsController, "Notification controller expected");
+
+    final controller = object as NotificationsController;
+
+    if (data == nullptr) {
+      //realm_collection_changes data clone is done in native code before this callback is invoked. nullptr data means cloning failed.
+      controller.onError(RealmError("Invalid notifications data received"));
+      return;
+    }
+
+    try {
+      final changesHandle = RealmCollectionChangesHandle._(data);
+      controller.onChanges(changesHandle);
+    } catch (e) {
+      controller.onError(RealmError("Error handling collection change notifications. Error: $e"));
+    }
+  }
+
+  RealmNotificationTokenHandle subscribeResultsNotifications(RealmResultsHandle handle, NotificationsController controller, SchedulerHandle schedulerHandle) {
+    final onChangeCallback = Pointer.fromFunction<Void Function(ffi.Handle, Pointer<realm_collection_changes>)>(collection_change_callback);
+
+    final pointer = _realmLib.invokeGetPointer(
+        () => _realmLib.realm_dart_results_add_notification_callback(handle._pointer, controller, onChangeCallback, schedulerHandle._pointer));
+
+    return RealmNotificationTokenHandle._(pointer);
+  }
+
+  RealmNotificationTokenHandle subscribeListNotifications(RealmListHandle handle, NotificationsController controller, SchedulerHandle schedulerHandle) {
+    final onChangeCallback = Pointer.fromFunction<Void Function(ffi.Handle, Pointer<realm_collection_changes>)>(collection_change_callback);
+
+    final pointer = _realmLib.invokeGetPointer(
+        () => _realmLib.realm_dart_list_add_notification_callback(handle._pointer, controller, onChangeCallback, schedulerHandle._pointer));
+
+    return RealmNotificationTokenHandle._(pointer);
+  }
 }
 
 class LastError {

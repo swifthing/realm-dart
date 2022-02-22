@@ -270,6 +270,7 @@ extension RealmObjectInternal on RealmObject {
 
   RealmObjectHandle get handle => _handle!;
   RealmAccessor get accessor => _accessor;
+
 }
 
 /// An exception being thrown when a `Realm` operation or [RealmObject] access fails.
