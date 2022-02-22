@@ -526,8 +526,9 @@ class _RealmCore {
   }
   bool objectEquals(RealmObject first, RealmObject second) => _equals(first.handle, second.handle);
   bool realmEquals(Realm first, Realm second) => _equals(first.handle, second.handle);
-
-  bool objectIsValid(RealmObject object) {
+  bool configurationEquals(Configuration first, Configuration second) => _equals(first.handle, second.handle);
+ 
+   bool objectIsValid(RealmObject object) {
     return _realmLib.realm_object_is_valid(object.handle._pointer);
   }
 
@@ -734,6 +735,21 @@ void _intoRealmValue(Object? value, Pointer<realm_value_t> realm_value, Allocato
 }
 
 extension on Pointer<realm_value_t> {
+extension _TypeEx on Type {
+  RealmPropertyType toRealmProppertyType() {
+    if (this == String) {
+      return RealmPropertyType.string;
+    } else if (this == int) {
+      return RealmPropertyType.int;
+    } else if (this == double) {
+      return RealmPropertyType.double;
+    } else {
+      throw RealmException("Type $this can not converted to RealmPropertyType");
+    }
+  }
+}
+
+extension _realm_value_t_ex on Pointer<realm_value_t> {
   Object? toDartValue(Realm realm) {
     if (this == nullptr) {
       throw RealmException("Can not convert nullptr realm_value to Dart value");
