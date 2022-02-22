@@ -709,7 +709,7 @@ Future<void> main([List<String>? args]) async {
       realm.write(() => realm.add(Dog("Bella", age: 4)));
 
       expect(result, isNot(orderedEquals(snapshot)));
-      expect(result, containsAllInOrder(snapshot)); 
+      expect(result, containsAllInOrder(snapshot));
     });
 
     test('Lists create object with a list property', () {
@@ -1182,15 +1182,17 @@ Future<void> main([List<String>? args]) async {
       final dog = Dog('Fido', owner: person);
 
       expect(person, person);
-      expect(person, isNot(1)); 
+      expect(person, isNot(1));
       expect(person, isNot(dog));
 
       realm.write(() {
-        realm..add(person)..add(dog);
+        realm
+          ..add(person)
+          ..add(dog);
       });
 
       expect(person, person);
-      expect(person, isNot(1)); 
+      expect(person, isNot(1));
       expect(person, isNot(dog));
 
       final read = realm.query<Person>("name == 'Kasper'");
@@ -1198,22 +1200,26 @@ Future<void> main([List<String>? args]) async {
       expect(read, [person]);
     });
 
-    test('Realm.operator==', () {
+    test('Realm.operator== ', () {
+      final config = Configuration([Dog.schema, Person.schema]);
+      final r1 = Realm(config);
+      expect(r1, r1);
+    });
+
+    test('Realm.operator== same config', () {
       final config = Configuration([Dog.schema, Person.schema]);
       final r1 = Realm(config);
       final r2 = Realm(config);
 
-      expect(r1, r1);
-      expect(r2, r2);
+      expect(r1, r2);
+    });
+
+    test('Realm.operator== different config', () {
+      var config = Configuration([Dog.schema, Person.schema]);
+      final r1 = Realm(config);
+      config = Configuration([Dog.schema, Person.schema]);
+      final r2 = Realm(config);
       expect(r1, isNot(r2));
-
-      r1.write(() {
-        r1.add(Person('Kasper'));
-      });
-
-      final r3 = r1.all<Person>().first.realm;
-      expect(identical(r1, r3), isTrue);
-      expect(r1, r3);
     });
   });
 }

@@ -444,6 +444,7 @@ class _RealmCore {
   }
   bool objectEquals(RealmObject first, RealmObject second) => _equals(first.handle, second.handle);
   bool realmEquals(Realm first, Realm second) => _equals(first.handle, second.handle);
+  bool configurationEquals(Configuration first, Configuration second) => _equals(first.handle, second.handle);
 }
 
 class LastError {

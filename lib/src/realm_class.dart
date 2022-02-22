@@ -200,7 +200,11 @@ class Realm {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! Realm) return false;
-    return realmCore.realmEquals(this, other);
+    bool areEquals = realmCore.realmEquals(this, other);
+    if (!areEquals) {
+      areEquals = realmCore.configurationEquals(config, other.config);
+    }
+    return areEquals;
   }
 }
 
