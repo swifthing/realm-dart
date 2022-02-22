@@ -17,9 +17,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/dart/element/type.dart';
 import 'package:build/build.dart';
 import 'package:realm_common/realm_common.dart';
 import 'package:realm_generator/src/expanded_context_span.dart';
+import 'package:realm_generator/src/pseudo_type.dart';
 import 'package:source_gen/source_gen.dart';
 import 'package:source_span/source_span.dart';
 
@@ -55,17 +57,14 @@ extension FieldElementEx on FieldElement {
         [span!],
       );
 
+  DartType get modelType => typeAnnotation?.type?.nullIfDynamic ?? initializerExpression?.staticType ?? PseudoType(typeAnnotation.toString());
+  
   // Works even if type of field is unresolved
-  String get typeText => (typeAnnotation ?? initializerExpression?.staticType ?? type).toString();
+  String get typeText => modelType.getDisplayString(withNullability: true);
 
-  String get typeModelName => type.isDynamic ? typeText : type.getDisplayString(withNullability: true);
+  String get typeModelName => typeText;// type.isDynamic ? typeText : type.getDisplayString(withNullability: true);
 
-  // TODO: using replaceAll is a temporary hack.
-  // It is needed for now, since we cannot construct a DartType for the yet to
-  // be generated classes, ie. for _A given A. Once the new static meta
-  // programming feature is added to dart, we should be able to resolve this
-  // using a ClassTypeMacro.
-  String get typeName => typeModelName.replaceAll(session.prefix, '');
+  String get typeName => modelType.mappedName;
 
   RealmFieldInfo? get realmInfo {
     try {
@@ -229,7 +228,6 @@ extension FieldElementEx on FieldElement {
       rethrow;
     } catch (e, s) {
       // Fallback. Not perfect, but better than just forwarding original error.
-      print(s);
       throw RealmInvalidGenerationSourceError(
         '$e',
         todo: //

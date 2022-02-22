@@ -21,7 +21,6 @@ import 'package:realm_common/realm_common.dart';
 
 import 'dart_type_ex.dart';
 import 'field_element_ex.dart';
-import 'session.dart';
 
 class RealmFieldInfo {
   final FieldElement fieldElement;
@@ -50,17 +49,19 @@ class RealmFieldInfo {
   String get name => fieldElement.name;
   String get realmName => mapTo ?? name;
 
-  String get basicTypeName => type.basicName;
+  String get basicMappedTypeName => type.basicMappedName;
+
+  String get mappedTypeName => type.mappedName;
 
   String get typeModelName => fieldElement.typeModelName;
 
-  String get typeName => typeModelName.replaceAll(session.prefix, ''); // TODO: using replaceAll is a hack
+  String get typeName => fieldElement.typeName;
 
   RealmCollectionType get realmCollectionType => type.realmCollectionType;
 
   Iterable<String> toCode() sync* {
     yield '@override';
-    yield "$typeName get $name => RealmObject.get<$basicTypeName>(this, '$realmName') as $typeName;";
+    yield "$typeName get $name => RealmObject.get<$basicMappedTypeName>(this, '$realmName') as $typeName;";
     bool generateSetter = !isFinal && !primaryKey && !isRealmCollection;
     if (generateSetter) {
       yield '@override';
