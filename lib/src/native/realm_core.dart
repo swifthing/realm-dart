@@ -523,15 +523,15 @@ class _RealmCore {
   bool objectEquals(RealmObject first, RealmObject second) => _equals(first.handle, second.handle);
   bool realmEquals(Realm first, Realm second) => _equals(first.handle, second.handle);
   bool configurationEquals(Configuration first, Configuration second) => _equals(first.handle, second.handle);
-
-   bool objectIsValid(RealmObject object) {
+  
+  bool objectIsValid(RealmObject object) {
     return _realmLib.realm_object_is_valid(object.handle._pointer);
   }
 
   bool listIsValid(RealmList list) {
     return _realmLib.realm_list_is_valid(list.handle._pointer);
   }
-
+  
   static void collection_change_callback(Object object, Pointer<realm_collection_changes> data) {
     assert(object is NotificationsController, "Notification controller expected");
 
@@ -569,6 +569,7 @@ class _RealmCore {
     return RealmNotificationTokenHandle._(pointer);
   }
 
+  
 }
 
 class LastError {
