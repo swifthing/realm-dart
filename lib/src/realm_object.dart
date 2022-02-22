@@ -219,6 +219,7 @@ class RealmObject {
 
   bool get isManaged => _realm != null;
 
+  /// `true` if this `RealmObject` is equal to another `RealmObject`.
   @override
   // ignore: hash_and_equals
   bool operator ==(Object other) {
@@ -270,7 +271,6 @@ extension RealmObjectInternal on RealmObject {
 
   RealmObjectHandle get handle => _handle!;
   RealmAccessor get accessor => _accessor;
-
 }
 
 /// An exception being thrown when a `Realm` operation or [RealmObject] access fails.
